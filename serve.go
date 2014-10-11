@@ -1,38 +1,47 @@
 package serve
 
+import "github.com/segmentio/go-log"
 import "path/filepath"
 import "net/http"
+import "path"
 
-// New file serving middleware.
-func New(root string) func(http.Handler) http.Handler {
-	fs := http.Dir(root)
+// New file serving middleware, restricted to `dir`.
+func New(dir string) func(http.Handler) http.Handler {
+	log := log.Log.New("serve (" + dir + ")")
+	fs := http.Dir(dir)
 
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// open
-			f, err := fs.Open(r.URL.Path)
+			name := r.URL.Path
+
+			log.Debug("open %s", name)
+
+			f, err := fs.Open(name)
+
 			if err != nil {
+				log.Debug("%s open error: %s", name, err)
 				h.ServeHTTP(w, r)
 				return
 			}
-			defer f.Close()
 
-			// stat
-			stat, err := f.Stat()
+			s, err := f.Stat()
+
 			if err != nil {
+				log.Debug("%s stat error: %s", name, err)
 				h.ServeHTTP(w, r)
 				return
 			}
 
-			// dir
-			if stat.IsDir() {
+			if s.IsDir() {
+				log.Debug("%s is a directory", name)
 				h.ServeHTTP(w, r)
 				return
 			}
 
-			// file
-			path := filepath.Join(root, stat.Name())
-			http.ServeFile(w, r, path)
+			name = filepath.Join(dir, filepath.FromSlash(path.Clean("/"+name)))
+
+			log.Debug("serving %s (%d bytes)", name, s.Size)
+			http.ServeFile(w, r, name)
 		})
 	}
 }
