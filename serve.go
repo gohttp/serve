@@ -32,12 +32,6 @@ func New(dir string) func(http.Handler) http.Handler {
 				return
 			}
 
-			if s.IsDir() {
-				log.Debug("%s is a directory", name)
-				h.ServeHTTP(w, r)
-				return
-			}
-
 			name = filepath.Join(dir, filepath.FromSlash(path.Clean("/"+name)))
 
 			log.Debug("serving %s (%d bytes)", name, s.Size)
