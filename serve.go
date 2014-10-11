@@ -7,7 +7,7 @@ import "path"
 
 // New file serving middleware, restricted to `dir`.
 func New(dir string) func(http.Handler) http.Handler {
-	log := log.Log.New("serve (" + dir + ")")
+	log := log.Log.New("serve " + dir)
 	fs := http.Dir(dir)
 
 	return func(h http.Handler) http.Handler {
